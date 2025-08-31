@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Welcome to InspireSpace</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}">🏠 Home</a>
+    <a href="{{ url_for('upload') }}">📤 Upload</a>
+    <a href="{{ url_for('profile') }}">👤 Profile</a>
+    {% if "username" in session %}
+      <a href="{{ url_for('logout') }}">🚪 Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">🔑 Login</a>
+      <a href="{{ url_for('signup') }}">📝 Sign Up</a>
+    {% endif %}
+  </div>
+
+  <div class="welcome-box">
+    <h1>🇮🇳 Welcome to InspireSpace 🇮🇳</h1>
+    <h2>Made with 💙 in India</h2>
+    <p>🌟 A platform for Students🎓, Creators👑, and Artists🖼️ to showcase their creativity.</p>
+    <p>Builded For Real Creators with Passion💎.</p>
+    <a class="btn" href="{{ url_for('index') }}">🚀 Enter InspireSpace</a>
+  </div>
+</body>
+</html>

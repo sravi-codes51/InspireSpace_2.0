@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload to InspireSpace</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}">🏠 Home</a>
+    <a href="{{ url_for('upload') }}">📤 Upload</a>
+    <a href="{{ url_for('profile') }}">👤 Profile</a>
+    {% if "username" in session %}
+      <a href="{{ url_for('logout') }}">🚪 Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">🔑 Login</a>
+      <a href="{{ url_for('signup') }}">📝 Sign Up</a>
+    {% endif %}
+  </div>
+
+  <div class="upload-container">
+    <h2>📤 Upload your Creative Work</h2>
+
+    {% if "username" in session %}
+      <p><strong>Logged in as:</strong> {{ session["username"] }}</p>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data">
+      <label for="file">Choose File (Image/Video):</label><br>
+      <input type="file" name="file" required><br><br>
+
+      <label for="creator">Creator Name:</label><br>
+      <input type="text" name="creator" placeholder="Your Name" required><br><br>
+
+      <label for="description">Description:</label><br>
+      <textarea name="description" placeholder="Write a short description..." rows="3" required></textarea><br><br>
+
+      <button type="submit">Upload</button>
+    </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="message">
+          {% for category, message in messages %}
+            <p class="{{ category }}">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+  </div>
+</body>
+</html>

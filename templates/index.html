@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>InspireSpace - Gallery</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}">🏠 Home</a>
+    <a href="{{ url_for('upload') }}">📤 Upload</a>
+    <a href="{{ url_for('profile') }}">👤 Profile</a>
+    {% if "username" in session %}
+      <a href="{{ url_for('logout') }}">🚪 Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">🔑 Login</a>
+      <a href="{{ url_for('signup') }}">📝 Sign Up</a>
+    {% endif %}
+  </div>
+
+  <h2>✨ InspireSpace Gallery ✨</h2>
+  <div class="gallery">
+    {% set metadata = load_data() %}
+    {% for file in files %}
+      <div class="gallery-item">
+        {% if file.endswith(('.png','.jpg','.jpeg','.gif')) %}
+          <img src="{{ url_for('static', filename='uploads/' + file) }}">
+        {% elif file.endswith(('.mp4','.avi','.mov','.mkv')) %}
+          <video controls>
+            <source src="{{ url_for('static', filename='uploads/' + file) }}" type="video/mp4">
+          </video>
+        {% endif %}
+
+        {% if file in metadata %}
+          <p><strong class="username-label">Uploaded by:</strong> {{ metadata[file]["username"] }}</p>
+          <p><strong class="creator-label">Creator:</strong> {{ metadata[file]["creator"] }}</p>
+          <p class="description-label"><em>{{ metadata[file]["description"] }}</em></p>
+          <p class="timestamp-label">📅 Uploaded on: {{ metadata[file]["timestamp"] }}</p>
+
+          {% if "username" in session and session["username"] == metadata[file]["username"] %}
+            <a href="{{ url_for('delete_file', filename=file) }}" class="delete-btn">🗑 Delete</a>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</body>
+</html>

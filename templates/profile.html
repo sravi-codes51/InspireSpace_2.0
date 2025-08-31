@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Profile - InspireSpace</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="navbar">
+    <a href="{{ url_for('index') }}">🏠 Home</a>
+    <a href="{{ url_for('upload') }}">📤 Upload</a>
+    <a href="{{ url_for('profile') }}">👤 Profile</a>
+    {% if "username" in session %}
+      <a href="{{ url_for('logout') }}">🚪 Logout</a>
+    {% else %}
+      <a href="{{ url_for('login') }}">🔑 Login</a>
+      <a href="{{ url_for('signup') }}">📝 Sign Up</a>
+    {% endif %}
+  </div>
+
+  <div class="profile-card">
+    <h2>👤 User Profile</h2>
+    {% if username %}
+      <p><strong>Username:</strong> {{ username }}</p>
+      <p><strong>Role:</strong> Student Creator</p>
+      <p><strong>Status:</strong> Active</p>
+    {% else %}
+      <p>You are not logged in.</p>
+    {% endif %}
+  </div>
+</body>
+</html>
