@@ -34,6 +34,13 @@ def inject_metadata():
 nsfw_detector = pipeline("image-classification", model="Falconsai/nsfw_image_detection")
 violence_detector = pipeline("image-classification", model="microsoft/resnet-50")
 
+# --- Violence text filter ---
+VIOLENCE_KEYWORDS = ["murder", "blood", "kill", "gore", "fight", "dead", "weapon", "shoot", "stab", "attack"]
+
+def contains_violence_text(text: str) -> bool:
+    text = text.lower()
+    return any(word in text for word in VIOLENCE_KEYWORDS)
+
 # ---------- ROUTES ---------- #
 @app.route("/")
 def welcome():
@@ -125,39 +132,82 @@ def upload():
             flash("❌ No file selected!", "error")
             return redirect(request.url)
 
+        # ✅ Violence text check (filename + description)
+        if contains_violence_text(file.filename) or contains_violence_text(description):
+            flash("❌ Upload blocked: Violence-related words in filename/description!", "error")
+            return redirect(request.url)
+
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(filepath)
 
         # --- AI Detection ---
+        nsfw_flag, violence_flag = False, False
+
+        # --- If video file → check frame by frame ---
         if filename.lower().endswith((".mp4", ".avi", ".mov", ".mkv")):
             cap = cv2.VideoCapture(filepath)
-            ret, frame = cap.read()
-            if ret:
-                frame_path = filepath + "_frame.jpg"
-                cv2.imwrite(frame_path, frame)
-                nsfw_result = nsfw_detector(frame_path)
-                violence_result = violence_detector(frame_path)
-                cap.release()
-                os.remove(frame_path)
-            else:
-                nsfw_result, violence_result = [], []
+            frame_count = 0
+
+            while True:
+                ret, frame = cap.read()
+                if not ret:
+                    break  # End of video
+
+                # Sample every 30th frame (~1 frame/sec if 30fps)
+                if frame_count % 30 == 0:
+                    frame_path = f"{filepath}_frame.jpg"
+                    cv2.imwrite(frame_path, frame)
+
+                    # Run detectors
+                    nsfw_result = nsfw_detector(frame_path)
+                    violence_result = violence_detector(frame_path)
+
+                    # Check NSFW
+                    if nsfw_result and nsfw_result[0]["label"].lower() == "nsfw":
+                        nsfw_flag = True
+
+                    # Check Violence
+                    bad_labels = ["assault", "weapon", "blood", "gore", "fight"]
+                    if violence_result:
+                        for res in violence_result:
+                            if res["label"].lower() in bad_labels and res["score"] > 0.6:
+                                violence_flag = True
+
+                    os.remove(frame_path)
+
+                    # If flagged, stop scanning further
+                    if nsfw_flag or violence_flag:
+                        break
+
+                frame_count += 1
+
+            cap.release()
+
         else:
+            # --- If image file ---
             nsfw_result = nsfw_detector(filepath)
             violence_result = violence_detector(filepath)
 
-        if nsfw_result and nsfw_result[0]["label"].lower() == "nsfw":
+            if nsfw_result and nsfw_result[0]["label"].lower() == "nsfw":
+                nsfw_flag = True
+
+            bad_labels = ["assault", "weapon", "blood", "gore", "fight"]
+            if violence_result:
+                for res in violence_result:
+                    if res["label"].lower() in bad_labels and res["score"] > 0.6:
+                        violence_flag = True
+
+        # --- Final Decision ---
+        if nsfw_flag:
             os.remove(filepath)
             flash("❌ Nude/sexual content blocked!", "error")
             return redirect(request.url)
 
-        bad_labels = ["assault", "weapon", "blood", "gore", "fight"]
-        if violence_result:
-            for res in violence_result:
-                if res["label"].lower() in bad_labels and res["score"] > 0.6:
-                    os.remove(filepath)
-                    flash("❌ Violent content blocked!", "error")
-                    return redirect(request.url)
+        if violence_flag:
+            os.remove(filepath)
+            flash("❌ Violent content blocked!", "error")
+            return redirect(request.url)
 
         # Save metadata with username + time
         data = load_data()
